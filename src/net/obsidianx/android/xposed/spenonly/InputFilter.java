@@ -5,29 +5,28 @@ import android.os.FileObserver;
 import android.view.MotionEvent;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-import java.io.File;
-
 public class InputFilter implements IXposedHookLoadPackage {
+    public static final String TOGGLE_FILE = "spenonly";
+
     private boolean mEnabled;
     private FileObserver mObserver;
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
-        final String packageName = InputFilter.class.getPackage().getName();
-        final File file = new File(Environment.getDataDirectory(), "data/" + packageName + "/shared_prefs/" + Prefs.NAME + ".xml");
-        if(!file.exists()) {
-            file.mkdirs();
-            file.createNewFile();
-        }
-        mObserver = new FileObserver(file.getAbsolutePath()) {
+        final int mask = FileObserver.CREATE | FileObserver.DELETE;
+        mObserver = new FileObserver(Environment.getExternalStorageDirectory().getAbsolutePath(), mask) {
             @Override
             public void onEvent(int event, String path) {
-                final XSharedPreferences prefs = new XSharedPreferences(packageName, Prefs.NAME);
-                mEnabled = prefs.getBoolean(Prefs.PREF_ENABLED, false);
+                if(path != null && path.endsWith(TOGGLE_FILE)) {
+                    if(event == FileObserver.CREATE) {
+                        mEnabled = true;
+                    } else if(event == FileObserver.DELETE) {
+                        mEnabled = false;
+                    }
+                }
             }
         };
         mObserver.startWatching();

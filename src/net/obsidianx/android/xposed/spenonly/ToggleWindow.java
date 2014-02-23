@@ -1,8 +1,9 @@
 package net.obsidianx.android.xposed.spenonly;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.os.Environment;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CompoundButton;
@@ -12,16 +13,19 @@ import wei.mark.standout.StandOutWindow;
 import wei.mark.standout.constants.StandOutFlags;
 import wei.mark.standout.ui.Window;
 
+import java.io.File;
+import java.io.IOException;
+
 public class ToggleWindow extends StandOutWindow implements CompoundButton.OnCheckedChangeListener {
     private static final String TAG = ToggleWindow.class.getSimpleName();
 
-    private SharedPreferences mPrefs;
+    private File mToggleFile;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        mPrefs = getSharedPreferences(Prefs.NAME, MODE_WORLD_READABLE);
+        mToggleFile = new File(Environment.getExternalStorageDirectory(), InputFilter.TOGGLE_FILE);
     }
 
     @Override
@@ -31,15 +35,15 @@ public class ToggleWindow extends StandOutWindow implements CompoundButton.OnChe
 
     @Override
     public int getAppIcon() {
-        return R.drawable.icon;
+        return R.drawable.ic_launcher;
     }
 
     @Override
     public void createAndAttachView(int id, FrameLayout frame) {
         final View view = LayoutInflater.from(this).inflate(R.layout.window_toggle, frame, true);
         final Switch toggleSwitch = (Switch)view.findViewById(R.id.toggle_switch);
-        toggleSwitch.setChecked(mPrefs.getBoolean(Prefs.PREF_ENABLED, false));
         toggleSwitch.setOnCheckedChangeListener(this);
+        toggleSwitch.setChecked(mToggleFile.exists());
     }
 
     @Override
@@ -67,6 +71,14 @@ public class ToggleWindow extends StandOutWindow implements CompoundButton.OnChe
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        mPrefs.edit().putBoolean(Prefs.PREF_ENABLED, isChecked).commit();
+        try {
+            if(isChecked) {
+                mToggleFile.createNewFile();
+            } else {
+                mToggleFile.delete();
+            }
+        } catch(IOException e) {
+            Log.e(TAG, "Could not create toggle file");
+        }
     }
 }
