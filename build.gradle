@@ -1,0 +1,37 @@
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.7.+'
+    }
+}
+
+apply plugin: 'android'
+
+android {
+    compileSdkVersion 'android-16'
+    buildToolsVersion '19.0.1'
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+            java.srcDirs = ['src']
+        }
+    }
+}
+
+configurations {
+    provided
+}
+
+dependencies {
+    provided files('libs/XposedBridgeApi-42.jar')
+}
+
+android.applicationVariants.all { variant ->
+    variant.javaCompile.classpath += configurations.provided
+}
